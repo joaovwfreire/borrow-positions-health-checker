@@ -17,10 +17,10 @@ import (
 )
 
 func main() {
-	A(context.Background(), "0xb3D8CcA14f249Cf68E5272C1E7623BFecc705591")
+	AaveHealthCheck(context.Background(), "0xb3D8CcA14f249Cf68E5272C1E7623BFecc705591")
 }
 
-func A(ctx context.Context, address string) (*big.Int, error) {
+func AaveHealthCheck(ctx context.Context, address string) (*big.Int, error) {
 
 	const MulticallABI = "[{\"inputs\":[{\"internalType\":\"address[]\",\"name\":\"targets\",\"type\":\"address[]\"},{\"internalType\":\"bytes[]\",\"name\":\"datas\",\"type\":\"bytes[]\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"}]"
 	const LendingPoolABI = "[{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"reserve\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"user\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"onBehalfOf\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"borrowRateMode\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"borrowRate\",\"type\":\"uint256\"},{\"indexed\":true,\"internalType\":\"uint16\",\"name\":\"referral\",\"type\":\"uint16\"}],\"name\":\"Borrow\",\"type\":\"event\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"user\",\"type\":\"address\"}],\"name\":\"getUserAccountData\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"totalCollateralETH\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"totalDebtETH\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"availableBorrowsETH\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"currentLiquidationThreshold\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"ltv\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"healthFactor\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"}]"
@@ -35,7 +35,7 @@ func A(ctx context.Context, address string) (*big.Int, error) {
 	mc := multicall.NewMultiCall(alchemyEndpoint,
 		"0xcA11bde05977b3631167028862bE2a173976CA11")
 
-	csvFile, err := os.Open("borrowers.csv")
+	csvFile, err := os.Open("borrowersGenerator/borrowers.csv")
 	if err != nil {
 		panic(err)
 	}
@@ -60,7 +60,7 @@ func A(ctx context.Context, address string) (*big.Int, error) {
 
 	result, err := mc.CallTargets(ctx, passData)
 	if err != nil {
-		return nil, err
+		panic(err)
 	}
 
 	counter := 1

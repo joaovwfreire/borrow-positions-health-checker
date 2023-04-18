@@ -15,6 +15,7 @@ Most is interfaces. This repo's scope is to monitor the health factor of borrowe
     - [x] Health factor
     - [x] Borrowers list generator
     - [ ] Cli tool
+    - [ ] Refactor magic numbers
 - [ ] Compound
     - [ ] Health factor
     - [ ] Borrowers list generator
