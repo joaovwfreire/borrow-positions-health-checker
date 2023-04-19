@@ -7,6 +7,29 @@ This repo uses the Multicall contract to make a single call to the protocols' sm
 This repo also contains a list of borrowers generator. It works by concurrently fetching the borrow events and indexing the addresses of borrowers.
  This is useful if you want to monitor the health factor of a large number of borrowers.
 
+## Getting started
+```bash
+git clone https://github.com/joaovwfreire/borrow-positions-health-checker.git borrow-positions-health-checker
+cd borrow-positions-health-checker
+
+go run main.go
+```
+
+## Usage
+### Borrowers list generator
+
+```bash
+go run main.go borrowerList
+```
+Outputs a CSV file at the root of the project.
+
+### Health factor checker
+```bash
+go run main.go queryHealth
+```
+Outputs RED or YELLOW status if the health factor is below 1 or 1.5 respectively.
+The output also contains the health factor value and the address of the borrower.
+
 ## Smart Contracts
 Most is interfaces. This repo's scope is to monitor the health factor of borrowers. The smart contracts are just means for such, so I do recommend checking each protocol's documentation according to your own interest.
 
@@ -14,7 +37,7 @@ Most is interfaces. This repo's scope is to monitor the health factor of borrowe
 - [ ] Aave
     - [x] Health factor
     - [x] Borrowers list generator
-    - [ ] Cli tool
+    - [x] Cli tool
     - [ ] Refactor magic numbers
 - [ ] Compound
     - [ ] Health factor
