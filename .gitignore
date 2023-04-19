@@ -1,2 +1,5 @@
 .env
 secretmain.go
+
+aave_borrowers.csv
+borrowers.csv
