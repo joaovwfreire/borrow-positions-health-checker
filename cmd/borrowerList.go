@@ -9,6 +9,7 @@ import (
 	"github.com/spf13/cobra"
 
 	utils_aave "main/utils/aave"
+	utils_compound "main/utils/compound"
 )
 
 // borrowerListCmd represents the borrowerList command
@@ -19,9 +20,17 @@ var borrowerListCmd = &cobra.Command{
 Outputs a .csv file with the following format: "txHash, address, blockNumber".
 This file is used to run commands such as the "queryHealth".
 	`,
+	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("Generating AAVE-V2 borrower list...")
-		utils_aave.GenerateBorrowerList()
+		if args[0] == "aave" {
+			fmt.Println("Generating AAVE-V2 borrower list...")
+			utils_aave.GenerateBorrowerList()
+		} else if args[0] == "compound" {
+			fmt.Println("Generating Compound borrower list...")
+			utils_compound.GenerateBorrowerList()
+		} else {
+			fmt.Println("Invalid argument. Please use 'aave' as the argument.")
+		}
 	},
 }
 
