@@ -103,30 +103,8 @@ func CleanBorrowerList(ctx context.Context, address string) (*big.Int, error) {
 	if err != nil {
 		panic(err)
 	}
-	/*for _, vLog := range logs {
-
-		if vLog.Topics[0].Hex() == hashHex {
-
-			accountAddress := common.HexToAddress((vLog.Topics[1]).Hex())
-			fname := "./compound_withdrawers.csv"
-			// read the file
-			f, err := os.OpenFile(fname, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
-
-			if err != nil {
-				fmt.Println("Error: ", err)
-				return
-			}
-
-			w := csv.NewWriter(f)
-			a := []string{vLog.TxHash.String(), accountAddress.String(), strconv.FormatUint(uint64(vLog.BlockNumber), 10)}
-			w.Write(a)
-			w.Flush()
-		}
-
-	}*/
 
 	fname := "./compound_borrowers.csv"
-	// read the file
 	f, err := os.OpenFile(fname, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 	counter := 0
 	for _, accountBalance := range result {
@@ -189,7 +167,6 @@ func scripts(startBlock, endBlock int64, wg *sync.WaitGroup) {
 
 			accountAddress := common.HexToAddress((vLog.Topics[1]).Hex())
 			fname := "./compound_withdrawers.csv"
-			// read the file
 			f, err := os.OpenFile(fname, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 
 			if err != nil {
@@ -208,42 +185,3 @@ func scripts(startBlock, endBlock int64, wg *sync.WaitGroup) {
 	scripts(endBlock, endBlock+4000, wg)
 
 }
-
-/*
-function isLiquidatable(address account) override public view returns (bool) {
-	int104 principal = userBasic[account].principal;
-
-	if (principal >= 0) {
-		return false;
-	}
-
-	uint16 assetsIn = userBasic[account].assetsIn;
-	int liquidity = signedMulPrice(
-		presentValue(principal),
-		getPrice(baseTokenPriceFeed),
-		uint64(baseScale)
-	);
-
-	for (uint8 i = 0; i < numAssets; ) {
-		if (isInAsset(assetsIn, i)) {
-			if (liquidity >= 0) {
-				return false;
-			}
-
-			AssetInfo memory asset = getAssetInfo(i);
-			uint newAmount = mulPrice(
-				userCollateral[account][asset.asset].balance,
-				getPrice(asset.priceFeed),
-				asset.scale
-			);
-			liquidity += signed256(mulFactor(
-				newAmount,
-				asset.liquidateCollateralFactor
-			));
-		}
-		unchecked { i++; }
-	}
-
-	return liquidity < 0;
-}
-*/
