@@ -19,13 +19,14 @@ go run main.go
 ### Borrowers list generator
 
 ```bash
-go run main.go borrowerList
+go run main.go borrowerList aave
+go run main.go borrowerList compound
 ```
 Outputs a CSV file at the root of the project.
 
 ### Health factor checker
 ```bash
-go run main.go queryHealth
+go run main.go queryHealth aave
 ```
 Outputs RED or YELLOW status if the health factor is below 1 or 1.5 respectively.
 The output also contains the health factor value and the address of the borrower.
@@ -41,8 +42,8 @@ Most is interfaces. This repo's scope is to monitor the health factor of borrowe
     - [ ] Refactor magic numbers
 - [ ] Compound
     - [ ] Health factor
-    - [ ] Borrowers list generator
-    - [ ] Cli tool
+    - [x] Borrowers list generator
+    - [x] Cli tool
 - [ ] MakerDAO
     - [ ] Health factor
     - [ ] Borrowers list generator
