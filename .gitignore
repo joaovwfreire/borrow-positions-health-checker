@@ -3,4 +3,5 @@ secretmain.go
 
 aave_borrowers.csv
 compound_borrowers.csv
+compound_withdrawers.csv
 borrowers.csv
