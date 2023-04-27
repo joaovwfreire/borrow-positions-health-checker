@@ -30,11 +30,11 @@ func QueryHealth() {
 	}
 	alchemyEndpoint = os.Getenv("ALCHEMY_ENDPOINT")
 
-	tokenAddresses := GetTokens(context.Background())
-	CompoundHealthCheck(context.Background(), tokenAddresses)
+	tokenData := GetTokens(context.Background())
+	CompoundHealthCheck(context.Background(), tokenData)
 }
 
-func CompoundHealthCheck(ctx context.Context, tokens []string) (*big.Int, error) {
+func CompoundHealthCheck(ctx context.Context, tokens []TokenData) (*big.Int, error) {
 
 	mc := multicall.NewMultiCall(alchemyEndpoint,
 		"0xcA11bde05977b3631167028862bE2a173976CA11")
@@ -64,22 +64,40 @@ func CompoundHealthCheck(ctx context.Context, tokens []string) (*big.Int, error)
 		// this is utterly stupid, but this POC needs to be done
 		// the best way to do this is to deploy an-chain contract that does this
 		for _, token := range tokens {
-			fmt.Println((line[0] + token[1:]))
 			passData = append(passData, &multicall.ViewCall{
-				(line[0] + token[1:]),
+				(line[0] + token.address),
 				LendingPoolABI,
 				constants.COMPOUND_CUSDCV3,
 				"userCollateral",
-				[]interface{}{common.HexToAddress(line[0]), common.HexToAddress(token[1:])}})
+				[]interface{}{common.HexToAddress(line[0]), common.HexToAddress(token.address)}})
 		}
 
 	}
+
 	result, err := mc.CallTargets(ctx, passData)
 	if err != nil {
 		panic(err)
 	}
 
 	fmt.Println(result)
+
+	for _, line := range csvLines {
+
+		healthFactor := big.NewInt(0)
+
+		for _, token := range tokens {
+			valueToAdd := big.NewInt(1)
+			valueToAdd.Mul(valueToAdd, (result[line[0]+token.address])[0].(*big.Int))
+			valueToAdd.Mul(valueToAdd, token.lastPrice)
+			valueToAdd.Div(valueToAdd, token.scale)
+			healthFactor.Add(healthFactor, valueToAdd)
+
+		}
+
+		healthFactor.Sub(healthFactor, ((result[line[0]])[0].(*big.Int)))
+		fmt.Println("Health Factor for ", line[0], " is ", healthFactor)
+
+	}
 
 	return nil, nil
 }
@@ -117,7 +135,7 @@ func sliceToString(values []interface{}) string {
 	return strings.Join(s, ",")
 }
 
-func GetTokens(ctx context.Context) []string {
+func GetTokens(ctx context.Context) []TokenData {
 
 	mc := multicall.NewMultiCall(alchemyEndpoint,
 		"0xcA11bde05977b3631167028862bE2a173976CA11")
@@ -156,11 +174,53 @@ func GetTokens(ctx context.Context) []string {
 		panic(err)
 	}
 
-	tokens := []string{}
+	tokens := []TokenData{}
 	for i := range result {
-		addressString := sliceToString(result[i])[2:45]
-		tokens = append(tokens, addressString)
+		addressString := sliceToString(result[i])[3:45]
+		priceFeedString := sliceToString(result[i])[46:88]
+		scale := strings.Fields(sliceToString(result[i]))
+
+		tokenScale := new(big.Int)
+		tokenScale, _ = tokenScale.SetString(scale[3], 10)
+
+		tokens = append(tokens, TokenData{addressString, priceFeedString, tokenScale, big.NewInt(0)})
+
+	}
+
+	const ChainLinkABI = "[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_aggregator\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_accessController\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"int256\",\"name\":\"current\",\"type\":\"int256\"},{\"indexed\":true,\"internalType\":\"uint256\",\"name\":\"roundId\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"updatedAt\",\"type\":\"uint256\"}],\"name\":\"AnswerUpdated\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"uint256\",\"name\":\"roundId\",\"type\":\"uint256\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"startedBy\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"startedAt\",\"type\":\"uint256\"}],\"name\":\"NewRound\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"from\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"}],\"name\":\"OwnershipTransferRequested\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"from\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"}],\"name\":\"OwnershipTransferred\",\"type\":\"event\"},{\"inputs\":[],\"name\":\"acceptOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"accessController\",\"outputs\":[{\"internalType\":\"contract AccessControllerInterface\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"aggregator\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_aggregator\",\"type\":\"address\"}],\"name\":\"confirmAggregator\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"decimals\",\"outputs\":[{\"internalType\":\"uint8\",\"name\":\"\",\"type\":\"uint8\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"description\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"\",\"type\":\"string\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_roundId\",\"type\":\"uint256\"}],\"name\":\"getAnswer\",\"outputs\":[{\"internalType\":\"int256\",\"name\":\"\",\"type\":\"int256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint80\",\"name\":\"_roundId\",\"type\":\"uint80\"}],\"name\":\"getRoundData\",\"outputs\":[{\"internalType\":\"uint80\",\"name\":\"roundId\",\"type\":\"uint80\"},{\"internalType\":\"int256\",\"name\":\"answer\",\"type\":\"int256\"},{\"internalType\":\"uint256\",\"name\":\"startedAt\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"updatedAt\",\"type\":\"uint256\"},{\"internalType\":\"uint80\",\"name\":\"answeredInRound\",\"type\":\"uint80\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_roundId\",\"type\":\"uint256\"}],\"name\":\"getTimestamp\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"latestAnswer\",\"outputs\":[{\"internalType\":\"int256\",\"name\":\"\",\"type\":\"int256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"latestRound\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"latestRoundData\",\"outputs\":[{\"internalType\":\"uint80\",\"name\":\"roundId\",\"type\":\"uint80\"},{\"internalType\":\"int256\",\"name\":\"answer\",\"type\":\"int256\"},{\"internalType\":\"uint256\",\"name\":\"startedAt\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"updatedAt\",\"type\":\"uint256\"},{\"internalType\":\"uint80\",\"name\":\"answeredInRound\",\"type\":\"uint80\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"latestTimestamp\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"internalType\":\"address payable\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint16\",\"name\":\"\",\"type\":\"uint16\"}],\"name\":\"phaseAggregators\",\"outputs\":[{\"internalType\":\"contract AggregatorV2V3Interface\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"phaseId\",\"outputs\":[{\"internalType\":\"uint16\",\"name\":\"\",\"type\":\"uint16\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_aggregator\",\"type\":\"address\"}],\"name\":\"proposeAggregator\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"proposedAggregator\",\"outputs\":[{\"internalType\":\"contract AggregatorV2V3Interface\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint80\",\"name\":\"_roundId\",\"type\":\"uint80\"}],\"name\":\"proposedGetRoundData\",\"outputs\":[{\"internalType\":\"uint80\",\"name\":\"roundId\",\"type\":\"uint80\"},{\"internalType\":\"int256\",\"name\":\"answer\",\"type\":\"int256\"},{\"internalType\":\"uint256\",\"name\":\"startedAt\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"updatedAt\",\"type\":\"uint256\"},{\"internalType\":\"uint80\",\"name\":\"answeredInRound\",\"type\":\"uint80\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"proposedLatestRoundData\",\"outputs\":[{\"internalType\":\"uint80\",\"name\":\"roundId\",\"type\":\"uint80\"},{\"internalType\":\"int256\",\"name\":\"answer\",\"type\":\"int256\"},{\"internalType\":\"uint256\",\"name\":\"startedAt\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"updatedAt\",\"type\":\"uint256\"},{\"internalType\":\"uint80\",\"name\":\"answeredInRound\",\"type\":\"uint80\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_accessController\",\"type\":\"address\"}],\"name\":\"setController\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_to\",\"type\":\"address\"}],\"name\":\"transferOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"version\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"}]"
+
+	feedData := []*multicall.ViewCall{}
+	for i := 0; i < int((assetsN["0"][0].(uint8))); i++ {
+
+		iToString := strconv.Itoa(i)
+
+		feedData = append(feedData, &multicall.ViewCall{
+			Id:        iToString,
+			TargetAbi: ChainLinkABI,
+			Target:    tokens[i].priceFeed,
+			Method:    "latestRoundData",
+			Arguments: []interface{}{}})
+
+	}
+
+	feedResults, err := mc.CallTargets(ctx, feedData)
+	if err != nil {
+		panic(err)
+	}
+
+	for i := 0; i < int((assetsN["0"][0].(uint8))); i++ {
+
+		iToString := strconv.Itoa(i)
+		tokens[i].lastPrice = feedResults[iToString][2].(*big.Int)
+
 	}
 
 	return tokens
+}
+
+type TokenData struct {
+	address   string
+	priceFeed string
+	scale     *big.Int
+	lastPrice *big.Int
 }
