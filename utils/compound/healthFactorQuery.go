@@ -79,8 +79,6 @@ func CompoundHealthCheck(ctx context.Context, tokens []TokenData) (*big.Int, err
 		panic(err)
 	}
 
-	fmt.Println(result)
-
 	for _, line := range csvLines {
 
 		healthFactor := big.NewInt(0)
@@ -211,7 +209,7 @@ func GetTokens(ctx context.Context) []TokenData {
 	for i := 0; i < int((assetsN["0"][0].(uint8))); i++ {
 
 		iToString := strconv.Itoa(i)
-		tokens[i].lastPrice = feedResults[iToString][2].(*big.Int)
+		tokens[i].lastPrice = feedResults[iToString][1].(*big.Int)
 
 	}
 
