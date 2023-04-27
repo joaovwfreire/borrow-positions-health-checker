@@ -60,8 +60,6 @@ func scripts(startBlock, endBlock int64, wg *sync.WaitGroup) {
 		log.Fatal(err)
 	}
 
-	//fmt.Println("startBlock: ", startBlock, "\nendBlock: ", endBlock)
-
 	contractAddress := common.HexToAddress(constants.AAVE_LENDING_POOL_V2)
 	query := ethereum.FilterQuery{
 		FromBlock: big.NewInt(startBlock),
